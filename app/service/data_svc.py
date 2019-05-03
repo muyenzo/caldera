@@ -45,8 +45,10 @@ class DataService:
         entry_id = entry[0]['attack_id']
         await self.dao.create('core_ability', dict(id=id, name=name, test=test, technique=entry_id, executor=executor, description=description, cleanup=cleanup))
         if parser:
-            parser['ability_id'] = id
-            await self.dao.create('core_parser', parser)
+            await self.dao.delete('core_parser', dict(ability_id=id))
+            for entry in parser:
+                entry['ability_id'] = id
+                await self.dao.create('core_parser', entry)
         return 'Saved ability: %s' % id
 
     async def create_adversary(self, name, description, phases):
@@ -86,6 +88,14 @@ class DataService:
             ab['parser'] = await self.dao.get('core_parser', dict(ability_id=ab['id']))
             ab['technique'] = (await self.dao.get('core_attack', dict(attack_id=ab['technique'])))[0]
         return abilities
+
+    async def explode_parsers(self, criteria=None):
+        complete_list = await self.dao.get('core_parser', criteria=criteria)
+        working_space = {}
+        for entry in complete_list:
+            if entry['property'] not in working_space.keys():
+                working_space[entry['property']] = entry
+        return [x for x in working_space.values()]
 
     async def explode_adversaries(self, criteria=None):
         adversaries = await self.dao.get('core_adversary', criteria)
