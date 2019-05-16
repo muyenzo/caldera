@@ -34,17 +34,17 @@ class DataService:
                         await self.create_ability(id=ab.get('id'), tactic=ab['tactic'], technique=ab['technique'], name=ab['name'],
                                                   test=encoded_test.decode(), description=ab.get('description'), executor=ex,
                                                   cleanup=b64encode(el['cleanup'].strip().encode('utf-8')).decode() if el.get('cleanup') else None,
-                                                  parser=el.get('parser'))
+                                                  parser=[el.get('parser')])
 
     """ CREATE """
 
-    async def create_ability(self, id, tactic, technique, name, test, description, executor, cleanup=None, parser=None):
+    async def create_ability(self, id, tactic, technique, name, test, description, executor, cleanup=None, parser=[None]):
         await self.dao.delete('core_ability', dict(id=id, executor=executor))
         await self.dao.create('core_attack', dict(attack_id=technique['attack_id'], name=technique['name'], tactic=tactic))
         entry = await self.dao.get('core_attack', dict(attack_id=technique['attack_id']))
         entry_id = entry[0]['attack_id']
         await self.dao.create('core_ability', dict(id=id, name=name, test=test, technique=entry_id, executor=executor, description=description, cleanup=cleanup))
-        if parser:
+        if parser[0] is not None:
             await self.dao.delete('core_parser', dict(ability_id=id))
             for entry in parser:
                 entry['ability_id'] = id
