@@ -69,18 +69,7 @@ class DataService:
 
     async def create_ability(self, ability_id, tactic, technique, name, test, description, platform, cleanup=None,
                              payload=None, parser=None):
-        entry = await self.dao.get('core_attack', dict(attack_id=technique['attack_id']))
-        if len(entry) == 0:
-            await self.dao.create('core_attack',
-                              dict(attack_id=technique['attack_id'], name=technique['name'], tactic=str("['"+tactic+"']")))
-            entry = await self.dao.get('core_attack', dict(attack_id=technique['attack_id']))
-        else:
-            s_tactics = eval(entry[0]['tactic'])
-            if tactic not in s_tactics:
-                s_tactics.append(tactic)
-                await self.dao.update(table='core_attack', key='attack_id', value=technique['attack_id'],
-                                      data=dict(tactic=str(s_tactics)))
-        entry_id = entry[0]['attack_id']
+        entry_id = await self._create_attack(technique, tactic)
         identifier = await self.dao.create('core_ability',
                                            dict(ability_id=ability_id, name=name, test=test, technique=entry_id,
                                                 platform=platform, description=description, cleanup=cleanup))
@@ -209,3 +198,19 @@ class DataService:
 
     async def update(self, table, key, value, data):
         await self.dao.update(table, key, value, data)
+
+
+    """ SUPPORT """
+    async def _create_attack(self, technique, tactic):
+        entry = await self.dao.get('core_attack', dict(attack_id=technique['attack_id']))
+        if len(entry) == 0:
+            await self.dao.create('core_attack',
+                              dict(attack_id=technique['attack_id'], name=technique['name'], tactic=str("['"+tactic+"']")))
+            entry = await self.dao.get('core_attack', dict(attack_id=technique['attack_id']))
+        else:
+            s_tactics = eval(entry[0]['tactic'])
+            if tactic not in s_tactics:
+                s_tactics.append(tactic)
+                await self.dao.update(table='core_attack', key='attack_id', value=technique['attack_id'],
+                                      data=dict(tactic=str(s_tactics)))
+        return entry[0]['attack_id']
